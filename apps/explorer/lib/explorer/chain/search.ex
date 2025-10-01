@@ -131,8 +131,8 @@ defmodule Explorer.Chain.Search do
     %{items: metadata_tags, next_page_params: metadata_next_page_params} =
       maybe_fetch_metadata_tags(
         query_string,
-        parse_possible_nil(paging_options.key["metadata_tag"]["metadata_next_page_params"]),
-        ExplorerHelper.parse_boolean(paging_options.key["metadata_tag"]["end_of_tags"])
+        parse_possible_nil(paging_options.key[:metadata_tag]["metadata_next_page_params"]),
+        ExplorerHelper.parse_boolean(paging_options.key[:metadata_tag]["end_of_tags"])
       )
 
     paginated_metadata_tags = page_metadata_tags(metadata_tags, paging_options)
@@ -250,7 +250,7 @@ defmodule Explorer.Chain.Search do
   end
 
   defp page_metadata_tags(tags, paging_options) do
-    case (paging_options.key || %{})["metadata_tag"] do
+    case (paging_options.key || %{})[:metadata_tag] do
       %{"addresses_index" => addresses_index} ->
         Enum.drop(tags, ExplorerHelper.parse_integer(addresses_index))
 
@@ -799,7 +799,7 @@ defmodule Explorer.Chain.Search do
          query,
          %PagingOptions{
            key: %{
-             "label" => %{
+             label: %{
                "name" => name,
                "inserted_at" => inserted_at
              }
@@ -826,7 +826,7 @@ defmodule Explorer.Chain.Search do
          query,
          %PagingOptions{
            key: %{
-             "contract" => %{
+             contract: %{
                "certified" => certified,
                "name" => name,
                "inserted_at" => inserted_at
@@ -859,7 +859,7 @@ defmodule Explorer.Chain.Search do
          query,
          %PagingOptions{
            key: %{
-             "token" => %{
+             token: %{
                "circulating_market_cap" => circulating_market_cap,
                "fiat_value" => fiat_value,
                "is_verified_via_admin_panel" => is_verified_via_admin_panel,
@@ -978,8 +978,8 @@ defmodule Explorer.Chain.Search do
 
   defp search_tac_operations(search_query, paging_options) do
     case paging_options do
-      %PagingOptions{key: %{"tac_operation" => nil}} -> {:ok, %{items: [], next_page_params: nil}}
-      %PagingOptions{key: %{"tac_operation" => page_params}} -> do_search_tac_operations(search_query, page_params)
+      %PagingOptions{key: %{tac_operation: nil}} -> {:ok, %{items: [], next_page_params: nil}}
+      %PagingOptions{key: %{tac_operation: page_params}} -> do_search_tac_operations(search_query, page_params)
       _ -> do_search_tac_operations(search_query, nil)
     end
   end
@@ -1122,7 +1122,18 @@ defmodule Explorer.Chain.Search do
     end
   end
 
-  @paginated_types ["label", "contract", "token", "metadata_tag", "tac_operation"]
+  @paginated_types [
+    "label",
+    "contract",
+    "token",
+    "metadata_tag",
+    "tac_operation",
+    :label,
+    :contract,
+    :token,
+    :metadata_tag,
+    :tac_operation
+  ]
 
   defp trim_list_and_prepare_next_page_params(
          items,
@@ -1142,7 +1153,7 @@ defmodule Explorer.Chain.Search do
 
     base_params =
       Map.merge(
-        %{"next_page_params_type" => "search", "q" => query},
+        %{next_page_params_type: "search", q: query},
         prev_options
       )
 
@@ -1192,8 +1203,8 @@ defmodule Explorer.Chain.Search do
     inserted_at_datetime = DateTime.to_iso8601(inserted_at)
 
     %{
-      "name" => name,
-      "inserted_at" => inserted_at_datetime
+      name: name,
+      inserted_at: inserted_at_datetime
     }
   end
 
@@ -1212,12 +1223,12 @@ defmodule Explorer.Chain.Search do
     inserted_at_datetime = DateTime.to_iso8601(inserted_at)
 
     %{
-      "circulating_market_cap" => circulating_market_cap,
-      "fiat_value" => exchange_rate,
-      "is_verified_via_admin_panel" => is_verified_via_admin_panel,
-      "holder_count" => holders_count,
-      "name" => name,
-      "inserted_at" => inserted_at_datetime
+      circulating_market_cap: circulating_market_cap,
+      fiat_value: exchange_rate,
+      is_verified_via_admin_panel: is_verified_via_admin_panel,
+      holder_count: holders_count,
+      name: name,
+      inserted_at: inserted_at_datetime
     }
   end
 
@@ -1233,9 +1244,9 @@ defmodule Explorer.Chain.Search do
     inserted_at_datetime = DateTime.to_iso8601(inserted_at)
 
     %{
-      "certified" => certified,
-      "name" => name,
-      "inserted_at" => inserted_at_datetime
+      certified: certified,
+      name: name,
+      inserted_at: inserted_at_datetime
     }
   end
 
@@ -1258,14 +1269,14 @@ defmodule Explorer.Chain.Search do
       )
 
     %{
-      "address_hash" => address_hash,
-      "metadata_next_page_params" =>
+      address_hash: address_hash,
+      metadata_next_page_params:
         if(metadata_tag?(first_element_of_the_next_page),
           do: metadata_tag_to_paging_params(first_element_of_the_next_page),
           else: metadata_next_page_params
         ),
-      "end_of_tags" => is_nil(next_page_params),
-      "addresses_index" =>
+      end_of_tags: is_nil(next_page_params),
+      addresses_index:
         if(metadata_tag?(first_element_of_the_next_page) && first_element_of_the_next_page[:metadata]["slug"] == slug,
           do: addresses_index + 1,
           else: 0
@@ -1277,11 +1288,11 @@ defmodule Explorer.Chain.Search do
          %{type: "tac_operation", tac_operation: %{"timestamp" => timestamp}},
          _
        ) do
-    %{"page_token" => timestamp |> DateTime.from_iso8601() |> elem(1) |> DateTime.to_unix()}
+    %{page_token: timestamp |> DateTime.from_iso8601() |> elem(1) |> DateTime.to_unix()}
   end
 
   defp metadata_tag_to_paging_params(%{metadata: metadata}) do
-    %{"page_token" => "#{metadata["ordinal"]},#{metadata["slug"]},#{metadata["tagType"]}", "page_size" => 50}
+    %{page_token: "#{metadata["ordinal"]},#{metadata["slug"]},#{metadata["tagType"]}", page_size: 50}
   end
 
   defp metadata_tag?(%{type: "metadata_tag"}), do: true
@@ -1299,7 +1310,7 @@ defmodule Explorer.Chain.Search do
   A keyword list with paging options, where key is the map with the parsed paging options.
   """
   @spec parse_paging_options(map()) :: [paging_options: PagingOptions.t()]
-  def parse_paging_options(%{"next_page_params_type" => "search"} = paging_params) do
+  def parse_paging_options(%{next_page_params_type: "search"} = paging_params) do
     key =
       Enum.reduce(@paginated_types, %{}, fn type, acc ->
         if Map.has_key?(paging_params, type) do
